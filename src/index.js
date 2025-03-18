@@ -180,7 +180,7 @@ class Rogue extends Creature {
     }
 
     getDescriptions() {
-        return ["Перед атакой крадет способности у карт своего типа", ...super.getDescriptions()];
+        return ["Перед атакой крадет способности у карт противника", ...super.getDescriptions()];
     }
 }
 
