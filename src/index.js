@@ -10,6 +10,19 @@ function getCreatureDescription(card) {
 }
 
 class Creature extends Card {
+    constructor(name, maxPower, image) {
+        super(name, maxPower, image);
+        this._currentPower = maxPower;
+    }
+
+    get currentPower() {
+        return this._currentPower;
+    }
+
+    set currentPower(value) {
+        this._currentPower = Math.min(value, this.maxPower);
+    }
+
     getDescriptions() {
         return [getCreatureDescription(this), ...super.getDescriptions()];
     }
@@ -184,22 +197,49 @@ class Rogue extends Creature {
     }
 }
 
+class Brewer extends Duck {
+    constructor(name = "Пивовар", maxPower = 2) {
+        super(name, maxPower);
+    }
+
+    doBeforeAttack(gameContext, continuation) {
+        const taskQueue = new TaskQueue();
+
+        const { currentPlayer, oppositePlayer } = gameContext;
+
+        const allCards = currentPlayer.table.concat(oppositePlayer.table);
+
+        allCards.forEach(card => {
+            if (isDuck(card)) {
+                taskQueue.push(onDone => {
+                    card.maxPower += 1;
+                    card.currentPower += 2;
+                    card.view.signalHeal(onDone);
+                    card.updateView();
+                });
+            }
+        });
+
+        taskQueue.continueWith(continuation);
+    }
+}
+
 const seriffStartDeck = [
     new Duck(),
-    new Rogue(),
+    new Brewer(),
 ];
-
 const banditStartDeck = [
-    new Lad(),
-    new Lad(),
-    new Lad(),
+    new Dog(),
+    new Dog(),
+    new Dog(),
+    new Dog(),
 ];
 
 // Создание игры.
 const game = new Game(seriffStartDeck, banditStartDeck);
 
 // Глобальный объект, позволяющий управлять скоростью всех анимаций.
-SpeedRate.set(2);
+SpeedRate.set(1);
 
 // Запуск игры.
 game.play(false, (winner) => {
