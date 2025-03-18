@@ -132,11 +132,65 @@ class Gatling extends Creature {
     }
 }
 
+
+class Rogue extends Creature {
+    constructor(name = "Изгой", maxPower = 2) {
+        super(name, maxPower);
+    }
+
+    doBeforeAttack(gameContext, continuation) {
+        const { currentPlayer, oppositePlayer, position } = gameContext;
+
+        const oppositeCard = oppositePlayer.table[position];
+
+        if (oppositeCard) {
+            this.stealAbilities(oppositeCard, gameContext);
+        }
+        continuation();
+    }
+
+    stealAbilities(targetCard, gameContext) {
+        const { currentPlayer, oppositePlayer } = gameContext;
+
+        const targetPrototype = Object.getPrototypeOf(targetCard);
+
+        if (!targetPrototype || Object.getPrototypeOf(targetPrototype) === Creature.prototype) {
+            return;
+        }
+
+        const abilities = [
+            "modifyDealedDamageToCreature",
+            "modifyDealedDamageToPlayer",
+            "modifyTakenDamage",
+        ];
+
+        for (const ability of abilities) {
+            if (targetPrototype.hasOwnProperty(ability)) {
+                this[ability] = targetPrototype[ability];
+
+                for (const card of [...currentPlayer.table, ...oppositePlayer.table]) {
+                    if (Object.getPrototypeOf(card) === targetPrototype) {
+                        delete card[ability];
+                    }
+                }
+            }
+        }
+
+        gameContext.updateView();
+    }
+
+    getDescriptions() {
+        return ["Перед атакой крадет способности у карт своего типа", ...super.getDescriptions()];
+    }
+}
+
 const seriffStartDeck = [
     new Duck(),
-    new Duck(),
+    new Rogue(),
 ];
+
 const banditStartDeck = [
+    new Lad(),
     new Lad(),
     new Lad(),
 ];
@@ -145,7 +199,7 @@ const banditStartDeck = [
 const game = new Game(seriffStartDeck, banditStartDeck);
 
 // Глобальный объект, позволяющий управлять скоростью всех анимаций.
-SpeedRate.set(1);
+SpeedRate.set(2);
 
 // Запуск игры.
 game.play(false, (winner) => {
