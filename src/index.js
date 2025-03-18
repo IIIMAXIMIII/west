@@ -109,9 +109,32 @@ class Lad extends Dog {
     }
 }
 
+class Gatling extends Creature {
+    constructor(maxPower = 6) {
+        super('Гатлинг', maxPower);
+    }
+
+    attack(gameContext, continuation) {
+        const taskQueue = new TaskQueue();
+
+        const {currentPlayer, oppositePlayer, position, updateView} = gameContext;
+
+        taskQueue.push(onDone => this.view.showAttack(onDone));
+        oppositePlayer.table.forEach((card, index) => {
+            if (card) {
+                taskQueue.push(onDone => {
+                    this.dealDamageToCreature(2, card, gameContext, onDone);
+                });
+            }
+        });
+
+        taskQueue.continueWith(continuation);
+    }
+}
+
 const seriffStartDeck = [
-    new Lad(),
-    new Lad(),
+    new Duck(),
+    new Duck(),
 ];
 const banditStartDeck = [
     new Lad(),
